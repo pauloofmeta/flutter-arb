@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "target": "ES6",
+        "outDir": "arbEditor",
+        "lib": [
+            "ES6",
+            "DOM"
+        ],
+        "jsx": "react",
+        "sourceMap": true,
+        "rootDir": "..",
+        "noUnusedLocals": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}
