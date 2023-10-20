@@ -8,17 +8,13 @@
 		],
 		"sourceMap": true,
 		"rootDir": "src",
-		"strict": true   /* enable all strict type-checking options */
-		/* Additional Checks */
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
+		"esModuleInterop": true,
+		"strict": true
 	},
 	"exclude": [
+		"**/test",
 		"node_modules",
 		".vscode-test",
-		"**/view/app/index.tsx",
-		"**/view/app/components/Content.tsx",
-		"**/view/app/tsconfig.json",
+		"**/view/app",
 	]
 }

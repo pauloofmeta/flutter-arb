@@ -1,6 +1,67 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const vscode = require("vscode");
+exports.initViewLoader = void 0;
+const vscode = __importStar(require("vscode"));
+const extractLangFromPath = (path) => {
+    const fileName = path.substring(path.lastIndexOf('/') + 1, path.length + 1);
+    return fileName.substring(0, fileName.indexOf('.arb'));
+};
+const readArbFiles = async () => {
+    const files = await vscode.workspace.findFiles('**/l10n/*.arb', null, 100);
+    let resources = [];
+    const langs = [];
+    for (const file of files) {
+        const lang = extractLangFromPath(file.path);
+        if (!langs.includes(lang))
+            langs.push(lang);
+        const fileDocument = await vscode.workspace.openTextDocument(file);
+        const content = JSON.parse(fileDocument.getText());
+        for (const key of Object.keys(content)) {
+            const index = resources.findIndex((r) => r.key === key);
+            if (index >= 0) {
+                resources[index] = {
+                    ...resources[index],
+                    [lang]: content[key],
+                };
+            }
+            else {
+                resources.push({
+                    key: key,
+                    [lang]: content[key],
+                });
+            }
+        }
+    }
+    return [langs, resources];
+};
+const initViewLoader = async (extensionUri) => {
+    const [langs, resources] = await readArbFiles();
+    return new ViewLoader(extensionUri);
+};
+exports.initViewLoader = initViewLoader;
 class ViewLoader {
     constructor(extensionUri) {
         this._extensionUri = extensionUri;
@@ -8,8 +69,8 @@ class ViewLoader {
             enableScripts: true,
             localResourceRoots: [
                 vscode.Uri.joinPath(this._extensionUri, 'arbEditor'),
-                vscode.Uri.joinPath(this._extensionUri, 'node_modules', '@vscode/codicons', 'dist')
-            ]
+                vscode.Uri.joinPath(this._extensionUri, 'node_modules', '@vscode/codicons', 'dist'),
+            ],
         });
         this._panel.webview.html = this.getWebViewContent(this._panel.webview);
     }

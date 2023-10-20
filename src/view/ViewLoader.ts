@@ -1,41 +1,97 @@
 import * as vscode from 'vscode';
 
-export default class ViewLoader {
-    private readonly _extensionUri: vscode.Uri;
-    private readonly _panel: vscode.WebviewPanel | undefined;
+const extractLangFromPath = (path: string): string => {
+  const fileName = path.substring(path.lastIndexOf('/') + 1, path.length + 1);
 
-    constructor(extensionUri: vscode.Uri) {
-        this._extensionUri = extensionUri;
+  return fileName.substring(0, fileName.indexOf('.arb'));
+};
 
-        this._panel = vscode.window.createWebviewPanel(
-            'arb-editor',
-            'Flutter Arb Editor',
-            vscode.ViewColumn.One,
-            {
-                enableScripts: true,
-                localResourceRoots: [
-                    vscode.Uri.joinPath(this._extensionUri, 'arbEditor'),
-                    vscode.Uri.joinPath(this._extensionUri, 'node_modules', '@vscode/codicons', 'dist')
-                ]
-            }
-        );
+const readArbFiles = async (): Promise<[string[], any[]]> => {
+  const files = await vscode.workspace.findFiles('**/l10n/*.arb', null, 100);
 
-        this._panel.webview.html = this.getWebViewContent(this._panel.webview);
+  let resources: any[] = [];
+  const langs: string[] = [];
+  for (const file of files) {
+    const lang = extractLangFromPath(file.path);
+    if (!langs.includes(lang)) langs.push(lang);
+    const fileDocument = await vscode.workspace.openTextDocument(file);
+    const content = JSON.parse(fileDocument.getText());
+
+    for (const key of Object.keys(content)) {
+      const index = resources.findIndex((r) => r.key === key);
+      if (index >= 0) {
+        resources[index] = {
+          ...resources[index],
+          [lang]: content[key],
+        };
+      } else {
+        resources.push({
+          key: key,
+          [lang]: content[key],
+        });
+      }
     }
+  }
 
-    private getWebViewContent(webview: vscode.Webview): string {
-        const reactAppPathOnDisk = vscode.Uri.joinPath(
-            this._extensionUri, 'arbEditor', 'arbEditor.js'
-        );
+  return [langs, resources];
+};
 
-        const reactAppUri = webview.asWebviewUri(reactAppPathOnDisk);
-        const nonce = this.getNonce();
+export const initViewLoader = async (
+  extensionUri: vscode.Uri
+): Promise<any> => {
+  const [langs, resources] = await readArbFiles();
+  return new ViewLoader(extensionUri);
+};
 
-        const codiconsUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css'));
+export default class ViewLoader {
+  private readonly _extensionUri: vscode.Uri;
+  private readonly _panel: vscode.WebviewPanel | undefined;
 
+  constructor(extensionUri: vscode.Uri) {
+    this._extensionUri = extensionUri;
 
-        return `<!DOCTYPE html>
+    this._panel = vscode.window.createWebviewPanel(
+      'arb-editor',
+      'Flutter Arb Editor',
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        localResourceRoots: [
+          vscode.Uri.joinPath(this._extensionUri, 'arbEditor'),
+          vscode.Uri.joinPath(
+            this._extensionUri,
+            'node_modules',
+            '@vscode/codicons',
+            'dist'
+          ),
+        ],
+      }
+    );
+
+    this._panel.webview.html = this.getWebViewContent(this._panel.webview);
+  }
+
+  private getWebViewContent(webview: vscode.Webview): string {
+    const reactAppPathOnDisk = vscode.Uri.joinPath(
+      this._extensionUri,
+      'arbEditor',
+      'arbEditor.js'
+    );
+
+    const reactAppUri = webview.asWebviewUri(reactAppPathOnDisk);
+    const nonce = this.getNonce();
+
+    const codiconsUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(
+        this._extensionUri,
+        'node_modules',
+        '@vscode/codicons',
+        'dist',
+        'codicon.css'
+      )
+    );
+
+    return `<!DOCTYPE html>
         <html lang="eng">
         <head>
             <meta charset="UTF-8">
@@ -61,14 +117,15 @@ export default class ViewLoader {
             <script nonce="${nonce}" src="${reactAppUri}"></script>
         </body>
         </html>`;
-    }
+  }
 
-    private getNonce() {
-        let text = '';
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (let i = 0; i < 32; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-        }
-        return text;
+  private getNonce() {
+    let text = '';
+    const possible =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
+    return text;
+  }
 }
