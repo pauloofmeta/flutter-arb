@@ -1,13 +1,14 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { Content } from './components/Content';
 import { GlobalStyle } from './styles/GlobalStyle';
+import { MainPage } from './pages/MainPage';
+import { CommandsProvider } from './contexts/CommandsContext';
 
 const root = createRoot(document.getElementById('root')!);
 
 root.render(
-  <>
-    <Content />
+  <CommandsProvider>
+    <MainPage />
     <GlobalStyle />
-  </>
+  </CommandsProvider>
 );

@@ -47,19 +47,12 @@ interface TableProps {
 export function Table({ items, langs }: TableProps) {
   const [data, setData] = useState(items);
 
-  const columns = useMemo(
-    () => [
-      {
-        header: 'Key',
-        accessorKey: 'key',
-      },
-      ...langs.map((l) => ({
-        header: l,
-        accessorKey: l,
-      })),
-    ],
-    []
-  );
+  const [columns, setColumns] = useState<ColumnDef<unknown, any>[]>([
+    {
+      header: 'Key',
+      accessorKey: 'key',
+    },
+  ]);
 
   const table = useReactTable({
     data,
@@ -89,6 +82,19 @@ export function Table({ items, langs }: TableProps) {
   useEffect(() => {
     setData(items);
   }, [items]);
+
+  useEffect(() => {
+    setColumns([
+      {
+        header: 'Key',
+        accessorKey: 'key',
+      },
+      ...langs.map((l) => ({
+        header: l,
+        accessorKey: l,
+      })),
+    ]);
+  }, [langs]);
 
   return (
     <TableContent>
